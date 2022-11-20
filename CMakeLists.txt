@@ -3,4 +3,4 @@ project(MaximaFinderC)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(MaximaFinder main.cpp)
+add_executable(${PROJECT_NAME} cfindmaxima.cpp)
