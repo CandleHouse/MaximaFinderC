@@ -16,4 +16,3 @@ if __name__ == '__main__':
     dataptr = phantom.astype(np.uint32).ctypes.data_as(ctypes.c_char_p)
     # cpplib.getMax.restype = ctypes.c_char_p
     a = cpplib.getMax(dataptr, rows, cols, b"phantom2.raw")
-    # print(ctypes.byref(a))

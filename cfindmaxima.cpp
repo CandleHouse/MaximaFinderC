@@ -60,20 +60,22 @@ bool getMax(int *matrix, int rows, int columns, const char * filename){
 
     return true;
 }
-//int main() {
-//
-//    int w = 976, h = 976;
-//    const char * filename = "E:\\Collection\\C++\\MaximaFinderC\\phantom.raw";
-//    uint8_t *image = new uint8_t[w*h];
-//    vector<uint8_t> a;
-//
-//    FILE* fp = fopen(filename, "rb");
-//    fread(image, sizeof(uint8_t), w*h, fp);
-//
-//    for (int i = 0; i < w*h; ++i)
-//        a.push_back(image[i]);
-//    fclose(fp);
-//    delete []image;
-//
-//    return 0;
-//}
+
+
+int main() {
+
+    int w = 976, h = 976;
+    const char * filename = "E:\\Collection\\C++\\MaximaFinderC\\phantom.raw";
+
+    vector<uint8_t> a(w * h);
+    FILE* fp = fopen(filename, "rb");
+    fread(&a[0], sizeof(uint8_t), w*h, fp);
+    fclose(fp);
+
+    int maxNum = *max_element(a.begin(), a.end());
+    int minNum = *min_element(a.begin(), a.end());
+    cout << "max is: " << maxNum << endl;
+    cout << "min is: " << minNum << endl;
+
+    return 0;
+}
