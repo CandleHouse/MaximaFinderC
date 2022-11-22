@@ -31,7 +31,7 @@ The re-implementation of the maxima finding function can either be called throug
 
    under the root directory to compile `./cfindmaxima.cpp`, which is the same file for c++ calls.
 
-   **⚠️ **This method is unable to back pass array of any type, as a result, maxima points founded can only be persisted in `./points.csv` files, which is in the same form of **ImageJ/Fiji output type: List**.
+   ⚠️ This method is unable to back pass array of any type, as a result, maxima points founded can only be persisted in `./points.csv` files, which is in the same form of **ImageJ/Fiji output type: List**.
 
 
 
