@@ -1,11 +1,17 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <ctime>
 #include <fstream>
 #include <string>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 using namespace std;
 
+
+// -------------
+// pure C++ code
+// -------------
 
 typedef unsigned char uint8_t;
 uint8_t MAXIMUM = 1;
@@ -244,50 +250,50 @@ void analyzeAndMarkMaxima(vector<uint8_t> img_data, int width, int height, float
 }
 
 
-// compile command:
-// g++ -o cfindmaxima.so -shared -fPIC cfindmaxima.cpp
-extern "C" {
-    __declspec(dllexport)
-    void find_maxima(const int *img_data, int width, int height, float tolerance, const char *filename);
+// ----------------
+// Python interface
+// ----------------
+
+namespace py = pybind11;
+
+// wrap C++ function with NumPy array IO
+py::array py_find_maxima(py::array_t<uint8_t , py::array::c_style | py::array::forcecast> array,
+                         float tolerance) {
+    // check input dimensions
+    if (array.ndim() != 2)
+        throw std::runtime_error("Input should be 2-D NumPy array");
+
+    // allocate std::vector (to pass to the C++ function)
+    std::vector<uint8_t> img_data(array.size());
+
+    // copy py::array -> std::vector
+    std::memcpy(img_data.data(),array.data(),array.size()*sizeof(uint8_t));
+
+    // call pure C++ function
+    vector<int> x_arr, y_arr, points;
+    analyzeAndMarkMaxima(img_data, array.shape(0), array.shape(1),
+                         tolerance, true, false, x_arr, y_arr);
+    points.insert(points.end(), x_arr.begin(), x_arr.end());
+    points.insert(points.end(), y_arr.begin(), y_arr.end());
+
+    ssize_t              ndim    = 2;
+    std::vector<ssize_t> shape   = { 2, static_cast<int>(x_arr.size()) };
+    std::vector<ssize_t> strides = { static_cast<int>(sizeof(int)*x_arr.size()), sizeof(int) };
+
+    // return 2-D NumPy array
+    return py::array(py::buffer_info(
+            points.data(),                           /* data as contiguous array  */
+            sizeof(int),                             /* size of one scalar        */
+            py::format_descriptor<int>::format(),    /* data type                 */
+            ndim,                                    /* number of dimensions      */
+            shape,                                   /* shape of the matrix       */
+            strides                                  /* strides for each axis     */
+    ));
 }
 
 
-// python calls
-void find_maxima(const int *data, int width, int height, float tolerance, const char *filename){
-    vector<uint8_t> img_data(width * height);
-    for (int i = 0; i < width * height; ++i)
-        img_data[i] = data[i];
-
-    vector<int> x_arr, y_arr;
-    analyzeAndMarkMaxima(img_data, width, height, tolerance, true, false, x_arr, y_arr);
-
-    ofstream outFile;
-    outFile.open(filename, ios::out);
-    outFile << " ,X,Y" << endl;
-    for (int i = 0; i < x_arr.size(); ++i)
-        outFile << to_string(i + 1) + "," + to_string(x_arr[i]) + "," + to_string(y_arr[i]) << endl;
-    outFile.close();
-}
-
-
-int main() {
-    int w = 976, h = 976;
-    const char * filename = "img/phantom.raw";
-
-    vector<uint8_t> image(w * h);
-    FILE* fp = fopen(filename, "rb");
-    fread(&image[0], sizeof(uint8_t), w*h, fp);
-    fclose(fp);
-
-    vector<int> x_arr, y_arr;
-    time_t start, end;
-    start = clock();
-    analyzeAndMarkMaxima(image, w, h, 10, true, false, x_arr, y_arr);
-    end = clock();
-    cout << "Time(s): " << (double)(end - start) / 1000 << endl;
-    cout << "Count: " << x_arr.size() << endl;
-    for (int i = 0; i < x_arr.size(); ++i)
-        cout << "(" << x_arr[i] << "," << y_arr[i]<< ")" << endl;
-
-    return 0;
+// wrap as Python module
+PYBIND11_MODULE(cfindmaxima, m) {
+    m.doc() = "Maxima finding algorithm in ImageJ/Fiji re-implemented in C++";
+    m.def("find_maxima", &py_find_maxima, "find_maxima function" );
 }
